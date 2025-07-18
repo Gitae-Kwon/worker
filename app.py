@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# 근무시간 계산기 (최종 통합 코드 with 개별 항목 블록 시각화)
+# 근무시간 계산기 (특정 날짜 우선 표시 모드 적용)
 
 import streamlit as st
 from datetime import datetime, timedelta, date, time
@@ -53,8 +53,6 @@ else:
     raw_remaining = (end_datetime - now).total_seconds() / 3600
     today_remaining = min(round(raw_remaining, 2), work_hours_per_day)
 
-today_ratio = (today_remaining / work_hours_per_day) * 100 if work_hours_per_day > 0 else 0
-
 # 🎌 공휴일
 try:
     holiday_list = holidays.CountryHoliday(country_code, years=[today.year, today.year + 1])
@@ -94,28 +92,30 @@ def render_block(title, worked_hours, remaining_hours, total_hours):
     """
     st.markdown(bar_html, unsafe_allow_html=True)
 
-weekday = today.weekday()
-start_of_week = today - timedelta(days=weekday)
-end_of_week = start_of_week + timedelta(days=4)
-start_of_month = today.replace(day=1)
-next_month = (start_of_month.replace(day=28) + timedelta(days=4)).replace(day=1)
-end_of_month = next_month - timedelta(days=1)
+# 오늘/주/월 계산은 target_date 없을 때만 실행
+if not target_date or target_date == today:
+    weekday = today.weekday()
+    start_of_week = today - timedelta(days=weekday)
+    end_of_week = start_of_week + timedelta(days=4)
+    start_of_month = today.replace(day=1)
+    next_month = (start_of_month.replace(day=28) + timedelta(days=4)).replace(day=1)
+    end_of_month = next_month - timedelta(days=1)
 
-week_remaining_days = get_remaining_workdays(today, end_of_week, holidays_set)
-month_remaining_days = get_remaining_workdays(today, end_of_month, holidays_set)
-week_total_days = get_total_workdays(start_of_week, end_of_week, holidays_set)
-month_total_days = get_total_workdays(start_of_month, end_of_month, holidays_set)
+    week_remaining_days = get_remaining_workdays(today, end_of_week, holidays_set)
+    month_remaining_days = get_remaining_workdays(today, end_of_month, holidays_set)
+    week_total_days = get_total_workdays(start_of_week, end_of_week, holidays_set)
+    month_total_days = get_total_workdays(start_of_month, end_of_month, holidays_set)
 
-week_remaining_hours = today_remaining + work_hours_per_day * week_remaining_days
-month_remaining_hours = today_remaining + work_hours_per_day * month_remaining_days
-week_total_hours = work_hours_per_day * week_total_days
-month_total_hours = work_hours_per_day * month_total_days
+    week_remaining_hours = today_remaining + work_hours_per_day * week_remaining_days
+    month_remaining_hours = today_remaining + work_hours_per_day * month_remaining_days
+    week_total_hours = work_hours_per_day * week_total_days
+    month_total_hours = work_hours_per_day * month_total_days
 
-# ✅ 출력
-render_block("오늘", work_hours_per_day - today_remaining, today_remaining, work_hours_per_day)
-render_block("이번주", week_total_hours - week_remaining_hours, week_remaining_hours, week_total_hours)
-render_block("이번달", month_total_hours - month_remaining_hours, month_remaining_hours, month_total_hours)
+    render_block("오늘", work_hours_per_day - today_remaining, today_remaining, work_hours_per_day)
+    render_block("이번주", week_total_hours - week_remaining_hours, week_remaining_hours, week_total_hours)
+    render_block("이번달", month_total_hours - month_remaining_hours, month_remaining_hours, month_total_hours)
 
+# 특정일 선택 시 단독 계산
 if target_date and target_date > today:
     target_remaining_days = get_remaining_workdays(today, target_date, holidays_set)
     total_days = get_total_workdays(today, target_date, holidays_set)

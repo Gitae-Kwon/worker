@@ -86,9 +86,7 @@ def render_block(title, worked_hours, remaining_hours, total_hours):
     remaining_ratio = 100 - worked_ratio
     worked_text = f"{format_hours_to_hm(worked_hours)}({worked_ratio:.0f}%)"
     remaining_text = f"{format_hours_to_hm(remaining_hours)}({remaining_ratio:.0f}%)"
-    st.subheader(f"{title} 남은 근무시간")
-    st.markdown(f"### {format_hours_to_hm(remaining_hours)} ({remaining_ratio:.0f}%)")
-    st.markdown(f"**{title} 일한시간:** {worked_text} &nbsp;&nbsp;&nbsp; **남은시간:** {remaining_text}")
+    st.markdown(f"**일한 시간:** {worked_text} &nbsp;&nbsp;&nbsp; **남은시간:** {remaining_text}")
     bar_html = f"""
     <div style='display:flex; height:20px; border-radius:4px; overflow:hidden; margin-bottom:30px'>
         <div style='width:{worked_ratio}%; background-color:red;'></div>

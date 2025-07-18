@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# 근무시간 계산기 (특정 날짜 우선 표시 모드 적용)
+# 근무시간 계산기 (특정 날짜 미포함 방식)
 
 import streamlit as st
 from datetime import datetime, timedelta, date, time
@@ -115,10 +115,11 @@ if not target_date or target_date == today:
     render_block("이번주", week_total_hours - week_remaining_hours, week_remaining_hours, week_total_hours)
     render_block("이번달", month_total_hours - month_remaining_hours, month_remaining_hours, month_total_hours)
 
-# 특정일 선택 시 단독 계산
+# 특정일 선택 시 단독 계산 (그 날짜 제외)
 if target_date and target_date > today:
-    target_remaining_days = get_remaining_workdays(today, target_date, holidays_set)
-    total_days = get_total_workdays(today, target_date, holidays_set)
+    target_date_excluded = target_date - timedelta(days=1)
+    target_remaining_days = get_remaining_workdays(today, target_date_excluded, holidays_set)
+    total_days = get_total_workdays(today, target_date_excluded, holidays_set)
     target_remaining_hours = today_remaining + work_hours_per_day * target_remaining_days
     total_target_hours = work_hours_per_day * total_days
-    render_block(f"{target_date}까지", total_target_hours - target_remaining_hours, target_remaining_hours, total_target_hours)
+    render_block(f"{target_date}까지 (당일 제외)", total_target_hours - target_remaining_hours, target_remaining_hours, total_target_hours)

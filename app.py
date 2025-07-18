@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# 근무시간 계산기 (모바일 최적화: 근무시간 시 단위, 점심시간 드롭다운 선택)
+# 근무시간 계산기 (모바일 최적화: 근무시간 시 단위, 점심시간 드롭다운, 출근시간 제한)
 
 import streamlit as st
 from datetime import datetime, timedelta, date, time
@@ -25,8 +25,8 @@ timezone_map = {
 }
 
 # ✅ 설정
-st.set_page_config(page_title="얼마나 남았니?", page_icon="🕒")
-st.title("🕒 얼마나 남았니")
+st.set_page_config(page_title="근무시간 계산기", page_icon="🕒")
+st.title("🕒 근무시간 계산기")
 
 # 🌐 국가 선택
 country_name = st.selectbox("현재 국가 선택 (공휴일 및 시간대 반영)", list(country_display.keys()), index=0)
@@ -48,7 +48,13 @@ lunch_minutes = lunch_options[lunch_label]
 work_hours_per_day = float(work_hours)
 lunch_break_hours = lunch_minutes / 60
 
-start_time = st.time_input("오늘 출근시간 입력", value=time(hour=9, minute=0))
+# 출근시간 선택 제한 (07:00~10:30, 15분 단위)
+available_times = [time(hour=h, minute=m) for h in range(7, 11) for m in (0, 15, 30, 45) if not (h == 10 and m > 30)]
+time_labels = [t.strftime("%H:%M") for t in available_times]
+selected_label = st.selectbox("오늘 출근시간 입력", time_labels, index=time_labels.index("09:00"))
+start_time = datetime.strptime(selected_label, "%H:%M").time()
+
+# 특정일 입력
 target_date = st.date_input("특정 날짜까지 남은 근무시간 확인", value=None)
 
 # 🕒 현재 시간

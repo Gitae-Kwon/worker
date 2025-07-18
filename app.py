@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# 근무시간 계산기 (특정 날짜 미포함 + 과거일 안내 반영)
+# 근무시간 계산기 (시/분 단위 입력 + 과거일 안내 포함)
 
 import streamlit as st
 from datetime import datetime, timedelta, date, time
@@ -25,17 +25,31 @@ timezone_map = {
 }
 
 # ✅ 설정
-st.set_page_config(page_title="근무시간 계산기", page_icon="🕒")
-st.title("🕒 근무시간 계산기")
+st.set_page_config(page_title="얼마나 남았니?", page_icon="🕒")
+st.title("🕒 얼마나 남았니?")
 
 # 🌐 국가 선택
 country_name = st.selectbox("현재 국가 선택 (공휴일 및 시간대 반영)", list(country_display.keys()), index=0)
 country_code = country_display[country_name]
 local_timezone = ZoneInfo(timezone_map.get(country_code, "Asia/Seoul"))
 
-# 📥 사용자 입력
-work_hours_per_day = st.number_input("하루 기준 근무시간 (시간)", min_value=1.0, max_value=24.0, value=8.0)
-lunch_break_hours = st.number_input("점심시간 (시간)", min_value=0.0, max_value=3.0, value=1.0)
+# 📥 사용자 입력 (시/분 단위)
+col1, col2 = st.columns(2)
+with col1:
+    work_hours = st.number_input("하루 근무시간 (시)", min_value=0, max_value=24, value=8)
+with col2:
+    work_minutes = st.number_input("하루 근무시간 (분)", min_value=0, max_value=59, value=0)
+
+col3, col4 = st.columns(2)
+with col3:
+    lunch_hours = st.number_input("점심시간 (시)", min_value=0, max_value=3, value=1)
+with col4:
+    lunch_minutes = st.number_input("점심시간 (분)", min_value=0, max_value=59, value=0)
+
+# 총 소수점 환산 시간
+work_hours_per_day = work_hours + work_minutes / 60
+lunch_break_hours = lunch_hours + lunch_minutes / 60
+
 start_time = st.time_input("오늘 출근시간 입력", value=time(hour=9, minute=0))
 target_date = st.date_input("특정 날짜까지 남은 근무시간 확인", value=None)
 

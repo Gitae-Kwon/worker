@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
-# 근무시간 계산기 (전체 통합코드)
+# 근무시간 계산기 (최종 통합 코드 with 가로 막대 시각화)
 
 import streamlit as st
 from datetime import datetime, timedelta, date, time
 from zoneinfo import ZoneInfo  # Python 3.9+
 import pandas as pd
 import holidays
-import altair as alt
 
 # 🌍 국가 코드 및 타임존 맵
 country_display = {
@@ -79,6 +78,22 @@ def format_hours_to_hm(hours: float):
     m = int(round((hours - h) * 60))
     return f"{h}시간 {m}분"
 
+def render_horizontal_bar(title, worked_hours, remaining_hours, total_hours):
+    worked_ratio = worked_hours / total_hours * 100
+    remaining_ratio = 100 - worked_ratio
+    worked_text = f"{format_hours_to_hm(worked_hours)}({worked_ratio:.0f}%)"
+    remaining_text = f"{format_hours_to_hm(remaining_hours)}({remaining_ratio:.0f}%)"
+    bar_html = f"""
+    <div style="margin-bottom:16px">
+        <div style="font-weight:600; margin-bottom:4px">{title} 일한시간: {worked_text} &nbsp;&nbsp;&nbsp; 남은시간: {remaining_text}</div>
+        <div style="display:flex; height:20px; border-radius:4px; overflow:hidden">
+            <div style="width:{worked_ratio}%; background-color:red;"></div>
+            <div style="width:{remaining_ratio}%; background-color:steelblue;"></div>
+        </div>
+    </div>
+    """
+    st.markdown(bar_html, unsafe_allow_html=True)
+
 weekday = today.weekday()
 start_of_week = today - timedelta(days=weekday)
 end_of_week = start_of_week + timedelta(days=4)
@@ -99,7 +114,7 @@ month_total_hours = work_hours_per_day * month_total_days
 week_ratio = (week_remaining_hours / week_total_hours * 100) if week_total_hours > 0 else 0
 month_ratio = (month_remaining_hours / month_total_hours * 100) if month_total_hours > 0 else 0
 
-# ✅ 출력
+# ✅ 출력 요약 수치
 st.subheader("📊 오늘 기준 근무시간")
 st.metric("오늘 남은 근무시간", f"{format_hours_to_hm(today_remaining)} ({today_ratio:.0f}%)")
 st.metric("이번주 남은 근무시간", f"{format_hours_to_hm(week_remaining_hours)} ({week_ratio:.0f}%)")
@@ -115,34 +130,7 @@ if target_date and target_date > today:
     st.subheader(f"📆 {target_date}까지")
     st.metric("남은 근무시간", f"{format_hours_to_hm(target_remaining_hours)} ({target_ratio:.0f}%)")
 
-# 📊 누적 그래프
-labels = ["오늘", "이번주", "이번달"]
-worked_hours = [
-    round(work_hours_per_day - today_remaining, 2),
-    round(week_total_hours - week_remaining_hours, 2),
-    round(month_total_hours - month_remaining_hours, 2),
-]
-remaining_hours = [
-    round(today_remaining, 2),
-    round(week_remaining_hours, 2),
-    round(month_remaining_hours, 2),
-]
-
-df = pd.DataFrame({
-    "구분": labels * 2,
-    "시간": worked_hours + remaining_hours,
-    "상태": ["일한시간"] * 3 + ["남은시간"] * 3
-})
-
-chart = alt.Chart(df).mark_bar().encode(
-    x=alt.X("구분:N", title=None),
-    y=alt.Y("시간:Q", title="근무시간"),
-    color=alt.Color("상태:N", scale=alt.Scale(domain=["일한시간", "남은시간"], range=["red", "steelblue"])),
-    tooltip=["구분", "상태", "시간"]
-).properties(
-    title="📊 일/주/월 근무 현황",
-    width=600,
-    height=300
-)
-
-st.altair_chart(chart, use_container_width=True)
+# ✅ 수평 막대 시각화 출력
+render_horizontal_bar("오늘", work_hours_per_day - today_remaining, today_remaining, work_hours_per_day)
+render_horizontal_bar("이번주", week_total_hours - week_remaining_hours, week_remaining_hours, week_total_hours)
+render_horizontal_bar("이번달", month_total_hours - month_remaining_hours, month_remaining_hours, month_total_hours)

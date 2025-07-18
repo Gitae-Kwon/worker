@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# 근무시간 계산기 (최종 통합 코드 with 가로 막대 시각화)
+# 근무시간 계산기 (최종 통합 코드 with 개별 항목 블록 시각화)
 
 import streamlit as st
 from datetime import datetime, timedelta, date, time
@@ -78,18 +78,18 @@ def format_hours_to_hm(hours: float):
     m = int(round((hours - h) * 60))
     return f"{h}시간 {m}분"
 
-def render_horizontal_bar(title, worked_hours, remaining_hours, total_hours):
-    worked_ratio = worked_hours / total_hours * 100
+def render_block(title, worked_hours, remaining_hours, total_hours):
+    worked_ratio = worked_hours / total_hours * 100 if total_hours > 0 else 0
     remaining_ratio = 100 - worked_ratio
     worked_text = f"{format_hours_to_hm(worked_hours)}({worked_ratio:.0f}%)"
     remaining_text = f"{format_hours_to_hm(remaining_hours)}({remaining_ratio:.0f}%)"
+    st.subheader(f"{title} 남은 근무시간")
+    st.markdown(f"### {format_hours_to_hm(remaining_hours)} ({remaining_ratio:.0f}%)")
+    st.markdown(f"**{title} 일한시간:** {worked_text} &nbsp;&nbsp;&nbsp; **남은시간:** {remaining_text}")
     bar_html = f"""
-    <div style="margin-bottom:16px">
-        <div style="font-weight:600; margin-bottom:4px">{title} 일한시간: {worked_text} &nbsp;&nbsp;&nbsp; 남은시간: {remaining_text}</div>
-        <div style="display:flex; height:20px; border-radius:4px; overflow:hidden">
-            <div style="width:{worked_ratio}%; background-color:red;"></div>
-            <div style="width:{remaining_ratio}%; background-color:steelblue;"></div>
-        </div>
+    <div style='display:flex; height:20px; border-radius:4px; overflow:hidden; margin-bottom:30px'>
+        <div style='width:{worked_ratio}%; background-color:red;'></div>
+        <div style='width:{remaining_ratio}%; background-color:steelblue;'></div>
     </div>
     """
     st.markdown(bar_html, unsafe_allow_html=True)
@@ -111,26 +111,14 @@ month_remaining_hours = today_remaining + work_hours_per_day * month_remaining_d
 week_total_hours = work_hours_per_day * week_total_days
 month_total_hours = work_hours_per_day * month_total_days
 
-week_ratio = (week_remaining_hours / week_total_hours * 100) if week_total_hours > 0 else 0
-month_ratio = (month_remaining_hours / month_total_hours * 100) if month_total_hours > 0 else 0
-
-# ✅ 출력 요약 수치
-st.subheader("📊 오늘 기준 근무시간")
-st.metric("오늘 남은 근무시간", f"{format_hours_to_hm(today_remaining)} ({today_ratio:.0f}%)")
-st.metric("이번주 남은 근무시간", f"{format_hours_to_hm(week_remaining_hours)} ({week_ratio:.0f}%)")
-st.metric("이번달 남은 근무시간", f"{format_hours_to_hm(month_remaining_hours)} ({month_ratio:.0f}%)")
+# ✅ 출력
+render_block("오늘", work_hours_per_day - today_remaining, today_remaining, work_hours_per_day)
+render_block("이번주", week_total_hours - week_remaining_hours, week_remaining_hours, week_total_hours)
+render_block("이번달", month_total_hours - month_remaining_hours, month_remaining_hours, month_total_hours)
 
 if target_date and target_date > today:
     target_remaining_days = get_remaining_workdays(today, target_date, holidays_set)
     total_days = get_total_workdays(today, target_date, holidays_set)
     target_remaining_hours = today_remaining + work_hours_per_day * target_remaining_days
     total_target_hours = work_hours_per_day * total_days
-    target_ratio = (target_remaining_hours / total_target_hours * 100) if total_target_hours > 0 else 0
-
-    st.subheader(f"📆 {target_date}까지")
-    st.metric("남은 근무시간", f"{format_hours_to_hm(target_remaining_hours)} ({target_ratio:.0f}%)")
-
-# ✅ 수평 막대 시각화 출력
-render_horizontal_bar("오늘", work_hours_per_day - today_remaining, today_remaining, work_hours_per_day)
-render_horizontal_bar("이번주", week_total_hours - week_remaining_hours, week_remaining_hours, week_total_hours)
-render_horizontal_bar("이번달", month_total_hours - month_remaining_hours, month_remaining_hours, month_total_hours)
+    render_block(f"{target_date}까지", total_target_hours - target_remaining_hours, target_remaining_hours, total_target_hours)
